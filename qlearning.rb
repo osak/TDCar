@@ -2,7 +2,7 @@ require_relative 'problem'
 
 class QLearning
   ALPHA = 0.1
-  GAMMA = 0.9
+  GAMMA = 0.4
   EPSILON = 0.05
 
   def initialize(init_state)

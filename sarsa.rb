@@ -1,7 +1,7 @@
 class Sarsa
   ALPHA = 0.1
-  GAMMA = 1
-  EPSILON = 0.1
+  GAMMA = 0.4
+  EPSILON = 0.05
 
   def initialize(init_state)
     @hoge = {}

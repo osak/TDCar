@@ -42,6 +42,8 @@ class Robot
   def reset
     @pos = Vector2D.new(200, 400)
     @angle = 0
+    @speed = Vector2D.new(0, 0)
+    @rotate_speed = 0
   end
 
   def move
@@ -74,16 +76,15 @@ class Robot
   end
 
   def react(action)
-    @speed = Vector2D.new(0, 0)
-    @rotate_speed = 0
+    @speed *= 0.3
+    @rotate_speed *= 0.3
     add_force(@left_wheel, action.l_force)
     add_force(@right_wheel, action.r_force)
     prev_pos = @pos.dup
     move
-    delta = prev_pos - pos
-    reward = delta.norm - 3.0
+    reward = @speed.norm-1.2
     unless (0..400).include?(@pos.x) and (0..400).include?(@pos.y)
-      reward = -1000
+      reward = -100000000000
       reset
     end
     @last_reward = reward
@@ -91,7 +92,7 @@ class Robot
   end
 
   def current_state
-    State.new(self, @angle, pos)
+    State.new(self, @angle, pos, @speed, @rotate_speed)
   end
 end
 
@@ -105,7 +106,7 @@ robot.right_wheel = Vector2D.new(40, 35).freeze
 #wheel1 = Wheel.new(robot, Vector2D.new(10, 35))
 #wheel2 = Wheel.new(robot, Vector2D.new(40, 35))
 fps_counter = FPSCounter.new
-brain = Sarsa.new(robot.current_state)
+brain = QLearning.new(robot.current_state)
 steps = 0
 
 mode = :stop
