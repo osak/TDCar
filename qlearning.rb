@@ -3,7 +3,7 @@ require_relative 'problem'
 class QLearning
   ALPHA = 0.1
   GAMMA = 0.4
-  EPSILON = 0.05
+  EPSILON = 0.01
 
   def initialize(init_state)
     @qs = Hash.new{|h,k| h[k] = 0.0}

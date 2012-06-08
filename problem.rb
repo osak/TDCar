@@ -26,9 +26,11 @@ class Action
     @@actions = []
     (-5..5).each do |l|
       (-5..5).each do |r|
-        lv = Vector2D.new(0, l*0.1).freeze
-        rv = Vector2D.new(0, r*0.1).freeze
-        @@actions << Action.new(lv, rv).freeze
+        if l.abs > 2 or r.abs > 2
+          lv = Vector2D.new(0, l*0.1).freeze
+          rv = Vector2D.new(0, r*0.1).freeze
+          @@actions << Action.new(lv, rv).freeze
+        end
       end
     end
     @@actions.freeze
@@ -50,7 +52,7 @@ class State
     @env = env
     @angle = discritize(angle, 90)
     @pos = Vector2D.new(discritize(pos.x, 100), discritize(pos.y, 100))
-    @speed = Vector2D.new(discritize(speed.x, 2), discritize(speed.y, 2))
+    @speed = Vector2D.new(discritize(speed.x, 0.3), discritize(speed.y, 0.3))
     @rotate_speed = discritize(rotate_speed, 2)
   end
 

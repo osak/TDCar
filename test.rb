@@ -30,6 +30,7 @@ class Robot
     @speed = Vector2D.new(0, 0)
     @angle = 0
     @rotate_speed = 0
+    @weight = 1
 
     @surface = SDL::Surface.new(SDL::HWSURFACE, @w, @h, SDL::Screen.get.format)
     @surface.lock
@@ -49,6 +50,8 @@ class Robot
   def move
     @pos += @speed
     @angle += @rotate_speed
+    @angle -= 360 if @angle > 360
+    @angle += 360 if @angle < -360
   end
 
   def draw(surface)
@@ -73,11 +76,24 @@ class Robot
     f = force.rotate(@angle * Math::PI / 180)
     @speed += f
     @rotate_speed += (pos-center).cross(f)
+    if @speed.norm > 3.0
+      @speed *= Math.sqrt(3.0) / Math.sqrt(@speed.norm)
+    end
   end
 
   def react(action)
-    @speed *= 0.3
-    @rotate_speed *= 0.3
+    friction = @speed * 0.5 * @weight
+    if friction.norm > @speed.norm
+      @speed *= 0
+    else
+      @speed -= friction
+    end
+    rotate_friction = @rotate_speed * 0.5 * @weight
+    if rotate_friction.abs > @rotate_speed.abs
+      @rotate_speed = 0
+    else
+      @rotate_speed -= rotate_friction
+    end
     add_force(@left_wheel, action.l_force)
     add_force(@right_wheel, action.r_force)
     prev_pos = @pos.dup
@@ -110,6 +126,7 @@ brain = QLearning.new(robot.current_state)
 steps = 0
 
 mode = :stop
+draw = true
 catch(:exit) do
   loop do
     while event = SDL::Event.poll
@@ -122,6 +139,8 @@ catch(:exit) do
           else
             mode = :learn
           end
+        elsif event.sym == SDL::Key::D
+          draw = !draw
         end
       end
     end
@@ -140,15 +159,18 @@ catch(:exit) do
     end
 =end
 
-    surface.lock
-    surface.fill_rect(0, 0, 400, 400, 0)
-    robot.draw(surface)
-    surface.unlock
+      surface.lock
+      surface.fill_rect(0, 0, 400, 400, 0)
+      if draw
+        robot.draw(surface)
+      end
+      surface.unlock
 
     font.draw_solid_utf8(surface, "FPS: #{fps_counter.fps}", 0, 0, 0xff, 0xff, 0xff)
     font.draw_solid_utf8(surface, "#{steps} steps", 0, 20, 0xff, 0xff, 0xff)
     font.draw_solid_utf8(surface, "Last reward: #{robot.last_reward}", 0, 40, 0xff, 0xff, 0xff)
     font.draw_solid_utf8(surface, "Mode: #{mode}", 0, 60, 0xff, 0xff, 0xff)
+    font.draw_solid_utf8(surface, "Speed: #{robot.speed}", 0, 80, 0xff, 0xff, 0xff)
 
     surface.flip
     fps_counter.tick
