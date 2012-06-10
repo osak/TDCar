@@ -5,31 +5,34 @@ def discritize(x, factor)
 end
 
 class Action
-  attr_reader :l_force, :r_force
+  attr_reader :l_force, :r_force, :id
   
   def eql?(other)
-    self.equal?(other)
+    @id == other.id
   end
   alias == eql?
 
   def hash
-    object_id
+    @id
   end
 
   private
-  def initialize(l_force, r_force)
+  def initialize(l_force, r_force, id)
     @l_force = l_force
     @r_force = r_force
+    @id = id
   end
 
   class <<self
     @@actions = []
+    id = 0
     (-5..5).each do |l|
       (-5..5).each do |r|
         if l.abs > 2 or r.abs > 2
           lv = Vector2D.new(0, l*0.1).freeze
           rv = Vector2D.new(0, r*0.1).freeze
-          @@actions << Action.new(lv, rv).freeze
+          @@actions << Action.new(lv, rv, id).freeze
+          id += 1
         end
       end
     end
@@ -77,5 +80,13 @@ class State
 
   def to_s
     "(#{@angle}, #{@pos})"
+  end
+
+  def marshal_dump
+    [@angle, @pos, @speed, @rotate_speed]
+  end
+
+  def marshal_load(dat)
+    @angle, @pos, @speed, @rotate_speed = *dat
   end
 end

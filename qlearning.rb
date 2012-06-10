@@ -10,6 +10,22 @@ class QLearning
     @cur = init_state
   end
 
+  def save_q(filename)
+    File.open(filename, "w") do |f|
+      Marshal.dump(@qs.to_a, f)
+    end
+    puts "Saved #{filename}"
+  end
+
+  def load_q(filename)
+    File.open(filename) do |f|
+      Marshal.load(f).each do |elem|
+        @qs[elem[0]] = elem[1]
+      end
+    end
+    puts "Loaded #{filename}"
+  end
+
   def greedy_decide(state)
     max_q = -Float::INFINITY
     best = nil

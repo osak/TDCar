@@ -122,11 +122,18 @@ robot.right_wheel = Vector2D.new(40, 35).freeze
 #wheel1 = Wheel.new(robot, Vector2D.new(10, 35))
 #wheel2 = Wheel.new(robot, Vector2D.new(40, 35))
 fps_counter = FPSCounter.new
-brain = QLearning.new(robot.current_state)
-steps = 0
-
 mode = :stop
 draw = true
+brain = QLearning.new(robot.current_state)
+steps = 0
+if ARGV.size > 0
+  brain.load_q(ARGV[0])
+  steps = ARGV[0].to_i
+  if ARGV[1]
+    mode = :trace
+  end
+end
+
 catch(:exit) do
   loop do
     while event = SDL::Event.poll
@@ -141,6 +148,8 @@ catch(:exit) do
           end
         elsif event.sym == SDL::Key::D
           draw = !draw
+        elsif event.sym == SDL::Key::S
+          brain.save_q("#{brain.class.name}-#{steps}.q")
         end
       end
     end
@@ -148,7 +157,10 @@ catch(:exit) do
     if mode == :learn
       brain.do_step
       steps += 1
-    elsif mode == :greedy
+      if steps % 10000 == 0
+        brain.save_q("#{brain.class.name}-#{steps}.q")
+      end
+    elsif mode == :greedy or mode == :trace
       robot.react(brain.greedy_decide(robot.current_state))
     end
 =begin
@@ -159,18 +171,25 @@ catch(:exit) do
     end
 =end
 
-      surface.lock
+    surface.lock
+    if mode == :trace
+      pos = robot.pos
+      surface.put_pixel(pos.x, pos.y, 0xffffff)
+    else
       surface.fill_rect(0, 0, 400, 400, 0)
       if draw
         robot.draw(surface)
       end
-      surface.unlock
+    end
+    surface.unlock
 
-    font.draw_solid_utf8(surface, "FPS: #{fps_counter.fps}", 0, 0, 0xff, 0xff, 0xff)
-    font.draw_solid_utf8(surface, "#{steps} steps", 0, 20, 0xff, 0xff, 0xff)
-    font.draw_solid_utf8(surface, "Last reward: #{robot.last_reward}", 0, 40, 0xff, 0xff, 0xff)
-    font.draw_solid_utf8(surface, "Mode: #{mode}", 0, 60, 0xff, 0xff, 0xff)
-    font.draw_solid_utf8(surface, "Speed: #{robot.speed}", 0, 80, 0xff, 0xff, 0xff)
+    if not mode == :trace
+      font.draw_solid_utf8(surface, "FPS: #{fps_counter.fps}", 0, 0, 0xff, 0xff, 0xff)
+      font.draw_solid_utf8(surface, "#{steps} steps", 0, 20, 0xff, 0xff, 0xff)
+      font.draw_solid_utf8(surface, "Last reward: #{robot.last_reward}", 0, 40, 0xff, 0xff, 0xff)
+      font.draw_solid_utf8(surface, "Mode: #{mode}", 0, 60, 0xff, 0xff, 0xff)
+      font.draw_solid_utf8(surface, "Speed: #{robot.speed}", 0, 80, 0xff, 0xff, 0xff)
+    end
 
     surface.flip
     fps_counter.tick
