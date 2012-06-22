@@ -115,7 +115,10 @@ end
 SDL.init(SDL::INIT_VIDEO)
 SDL::TTF.init
 surface = SDL::Screen.open(400, 400, 32, SDL::HWSURFACE | SDL::DOUBLEBUF)
+
+####### フォントは自分の環境に合わせてパスを変えてください ########
 font = SDL::TTF.open("/usr/share/fonts/TTF/migmix-1m-bold.ttf", 14)
+
 robot = Robot.new(Vector2D.new(200, 400), 50, 70)
 robot.left_wheel = Vector2D.new(10, 35).freeze
 robot.right_wheel = Vector2D.new(40, 35).freeze
@@ -124,7 +127,10 @@ robot.right_wheel = Vector2D.new(40, 35).freeze
 fps_counter = FPSCounter.new
 mode = :stop
 draw = true
+
+######## ここのクラスを変えるとアルゴリズムが変わります #######
 brain = QLearning.new(robot.current_state)
+
 steps = 0
 if ARGV.size > 0
   brain.load_q(ARGV[0])
