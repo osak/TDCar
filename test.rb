@@ -1,23 +1,13 @@
 #!/usr/bin/ruby
+#coding:utf-8
 
 require 'sdl'
-require 'narray'
+require 'optparse'
 require_relative 'fpscounter'
 require_relative 'problem'
 require_relative 'vector2d'
 require_relative 'qlearning'
 require_relative 'sarsa'
-
-class Wheel
-  def initialize(parent, pos)
-    @parent = parent
-    @pos = pos.freeze
-  end
-
-  def add_force(force)
-    @parent.add_force(@pos, force)
-  end
-end
 
 class Robot
   attr_reader :speed, :last_reward
@@ -112,32 +102,37 @@ class Robot
   end
 end
 
+appconf = Hash.new
+appconf[:method] = "Sarsa"
+appconf[:font] = "/usr/share/fonts/TTF/migmix-1m-bold.ttf"
+
+opts = OptionParser.new
+opts.on("--method NAME", String, "学習方式(Sarsa/QLearning)"){|v| appconf[:method] = v}
+opts.on("--trace", TrueClass, "学習しない(--fileと一緒に使うことを想定)"){|v| appconf[:trace] = v}
+opts.on("--file PATH", String, "評価関数をファイルから読む"){|v| appconf[:file] = v}
+opts.on("--log", TrueClass, "10000ターンごとに評価関数を吐く"){|v| appconf[:log] = v}
+opts.on("--font PATH", String, "文字表示に使うフォントファイル"){|v| appconf[:font] = v}
+opts.parse!
+
 SDL.init(SDL::INIT_VIDEO)
 SDL::TTF.init
 surface = SDL::Screen.open(400, 400, 32, SDL::HWSURFACE | SDL::DOUBLEBUF)
 
-####### フォントは自分の環境に合わせてパスを変えてください ########
-font = SDL::TTF.open("/usr/share/fonts/TTF/migmix-1m-bold.ttf", 14)
+font = SDL::TTF.open(appconf[:font], 14)
 
 robot = Robot.new(Vector2D.new(200, 400), 50, 70)
 robot.left_wheel = Vector2D.new(10, 35).freeze
 robot.right_wheel = Vector2D.new(40, 35).freeze
-#wheel1 = Wheel.new(robot, Vector2D.new(10, 35))
-#wheel2 = Wheel.new(robot, Vector2D.new(40, 35))
 fps_counter = FPSCounter.new
-mode = :stop
+mode = appconf[:trace] ? :trace : :stop
 draw = true
 
-######## ここのクラスを変えるとアルゴリズムが変わります #######
-brain = QLearning.new(robot.current_state)
+brain = eval(appconf[:method]).new(robot.current_state)
 
 steps = 0
-if ARGV.size > 0
-  brain.load_q(ARGV[0])
-  steps = ARGV[0].to_i
-  if ARGV[1]
-    mode = :trace
-  end
+if appconf[:file]
+  brain.load_q(appconf[:file])
+  steps = appconf[:file].to_i
 end
 
 catch(:exit) do
@@ -163,7 +158,7 @@ catch(:exit) do
     if mode == :learn
       brain.do_step
       steps += 1
-      if steps % 10000 == 0
+      if appconf[:log] and steps % 10000 == 0
         brain.save_q("#{brain.class.name}-#{steps}.q")
       end
     elsif mode == :greedy or mode == :trace
